@@ -12,6 +12,9 @@
     "build:win": "electron-builder --win",
     "build:linux": "electron-builder --linux"
   },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8"
@@ -22,13 +25,21 @@
     "directories": {
       "output": "dist"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "ouinsurinternet",
+      "repo": "whoops-app"
+    },
     "mac": {
       "category": "public.app-category.social-networking",
       "icon": "build/icon.icns",
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "entitlements": "build/entitlements.mac.plist",
