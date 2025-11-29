@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, desktopCapturer, session } = require('electron');
+const { app, BrowserWindow, shell, desktopCapturer, session, systemPreferences } = require('electron');
 const path = require('path');
 
 const APP_URL = 'https://whoops.krakenbots.com';
@@ -35,19 +35,30 @@ function createWindow() {
   mainWindow.loadURL(APP_URL);
 
   // Handle screen sharing on macOS/Linux - Electron needs special handling
-  mainWindow.webContents.session.setDisplayMediaRequestHandler((request, callback) => {
-    desktopCapturer.getSources({ types: ['screen', 'window'] }).then((sources) => {
+  mainWindow.webContents.session.setDisplayMediaRequestHandler(async (request, callback) => {
+    // Check screen recording permission on macOS
+    if (process.platform === 'darwin') {
+      const screenStatus = systemPreferences.getMediaAccessStatus('screen');
+      console.log('Screen recording permission status:', screenStatus);
+
+      if (screenStatus !== 'granted') {
+        // This will prompt the user to grant permission in System Preferences
+        console.log('Screen recording permission not granted. Please enable in System Preferences.');
+      }
+    }
+
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
       // If only one screen, use it directly. Otherwise, use the first one.
-      // For a better UX, you could show a picker dialog here
       if (sources.length > 0) {
         callback({ video: sources[0], audio: 'loopback' });
       } else {
         callback({});
       }
-    }).catch((error) => {
+    } catch (error) {
       console.error('Error getting sources:', error);
       callback({});
-    });
+    }
   });
 
   // Afficher la fenêtre quand c'est prêt
