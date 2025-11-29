@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, desktopCapturer, session } = require('electron');
 const path = require('path');
 
 const APP_URL = 'https://whoops.krakenbots.com';
@@ -33,6 +33,22 @@ function createWindow() {
   });
 
   mainWindow.loadURL(APP_URL);
+
+  // Handle screen sharing on macOS/Linux - Electron needs special handling
+  mainWindow.webContents.session.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ['screen', 'window'] }).then((sources) => {
+      // If only one screen, use it directly. Otherwise, use the first one.
+      // For a better UX, you could show a picker dialog here
+      if (sources.length > 0) {
+        callback({ video: sources[0], audio: 'loopback' });
+      } else {
+        callback({});
+      }
+    }).catch((error) => {
+      console.error('Error getting sources:', error);
+      callback({});
+    });
+  });
 
   // Afficher la fenêtre quand c'est prêt
   mainWindow.once('ready-to-show', () => {
