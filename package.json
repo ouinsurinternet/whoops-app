@@ -23,14 +23,21 @@
       "output": "dist"
     },
     "mac": {
-      "category": "public.app-category.utilities",
+      "category": "public.app-category.social-networking",
       "icon": "build/icon.icns",
       "target": [
         {
           "target": "dmg",
           "arch": ["x64", "arm64"]
         }
-      ]
+      ],
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Whoops a besoin d'accéder au microphone pour les appels vocaux.",
+        "NSCameraUsageDescription": "Whoops a besoin d'accéder à la caméra pour les appels vidéo.",
+        "NSScreenCaptureDescription": "Whoops a besoin d'accéder à l'écran pour le partage d'écran."
+      }
     },
     "dmg": {
       "title": "Whoops",
