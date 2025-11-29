@@ -19,9 +19,17 @@ function createWindow() {
       webSecurity: true
     },
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 15, y: 15 },
+    trafficLightPosition: { x: 16, y: 18 },
     backgroundColor: '#0a0a0a',
-    show: false
+    show: false,
+    // Windows title bar overlay
+    ...(process.platform === 'win32' && {
+      titleBarOverlay: {
+        color: '#0a0a0a',
+        symbolColor: '#ffffff',
+        height: 48
+      }
+    })
   });
 
   mainWindow.loadURL(APP_URL);
