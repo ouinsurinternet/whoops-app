@@ -1,9 +1,67 @@
-const { app, BrowserWindow, shell, desktopCapturer, session, systemPreferences } = require('electron');
+const { app, BrowserWindow, shell, desktopCapturer, session, systemPreferences, ipcMain } = require('electron');
 const path = require('path');
 
 const APP_URL = 'https://whoops.krakenbots.com';
 
 let mainWindow;
+let pickerWindow = null;
+let pendingSourceCallback = null;
+
+// Show screen picker window
+async function showScreenPicker() {
+  return new Promise((resolve) => {
+    pickerWindow = new BrowserWindow({
+      width: 800,
+      height: 600,
+      parent: mainWindow,
+      modal: true,
+      show: false,
+      resizable: false,
+      title: 'Partage d\'écran',
+      backgroundColor: '#18181b',
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, 'preload-picker.js')
+      }
+    });
+
+    pendingSourceCallback = resolve;
+
+    pickerWindow.loadFile('picker.html');
+    pickerWindow.once('ready-to-show', () => pickerWindow.show());
+    pickerWindow.on('closed', () => {
+      pickerWindow = null;
+      if (pendingSourceCallback) {
+        pendingSourceCallback(null);
+        pendingSourceCallback = null;
+      }
+    });
+  });
+}
+
+// IPC handlers for picker
+ipcMain.handle('get-sources', async () => {
+  const sources = await desktopCapturer.getSources({
+    types: ['screen', 'window'],
+    thumbnailSize: { width: 400, height: 300 }
+  });
+  return sources.map(source => ({
+    id: source.id,
+    name: source.name,
+    thumbnail: source.thumbnail.toDataURL()
+  }));
+});
+
+ipcMain.on('source-selected', (event, sourceId) => {
+  if (pendingSourceCallback) {
+    pendingSourceCallback(sourceId);
+    pendingSourceCallback = null;
+  }
+  if (pickerWindow) {
+    pickerWindow.close();
+  }
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -42,16 +100,26 @@ function createWindow() {
       console.log('Screen recording permission status:', screenStatus);
 
       if (screenStatus !== 'granted') {
-        // This will prompt the user to grant permission in System Preferences
         console.log('Screen recording permission not granted. Please enable in System Preferences.');
       }
     }
 
     try {
+      // Show picker and wait for user selection
+      const selectedSourceId = await showScreenPicker();
+
+      if (!selectedSourceId) {
+        // User cancelled
+        callback({});
+        return;
+      }
+
+      // Get the selected source
       const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
-      // If only one screen, use it directly. Otherwise, use the first one.
-      if (sources.length > 0) {
-        callback({ video: sources[0], audio: 'loopback' });
+      const selectedSource = sources.find(s => s.id === selectedSourceId);
+
+      if (selectedSource) {
+        callback({ video: selectedSource, audio: 'loopback' });
       } else {
         callback({});
       }
