@@ -1,7 +1,12 @@
-const { app, BrowserWindow, shell, desktopCapturer, session, systemPreferences, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, desktopCapturer, session, systemPreferences, ipcMain, Menu } = require('electron');
 const path = require('path');
+const { autoUpdater } = require('electron-updater');
 
 const APP_URL = 'https://whoops.krakenbots.com';
+
+// Auto-updater config
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
 
 let mainWindow;
 let pickerWindow = null;
@@ -156,7 +161,26 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  // Remove menu bar on Windows
+  if (process.platform === 'win32') {
+    Menu.setApplicationMenu(null);
+  }
+
+  createWindow();
+
+  // Check for updates
+  autoUpdater.checkForUpdatesAndNotify();
+});
+
+// Auto-updater events
+autoUpdater.on('update-available', () => {
+  console.log('Update available, downloading...');
+});
+
+autoUpdater.on('update-downloaded', () => {
+  console.log('Update downloaded, will install on quit');
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
