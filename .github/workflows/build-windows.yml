@@ -26,8 +26,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build and Publish Windows EXE
-        run: npx electron-builder --win --publish always
+      - name: Build Windows EXE
+        run: npx electron-builder --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -37,3 +37,14 @@ jobs:
           name: whoops-windows-exe
           path: dist/*.exe
           retention-days: 30
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Whoops v${{ github.run_number }}
+          files: |
+            dist/*.exe
+            dist/latest.yml
+          draft: false
+          prerelease: false
