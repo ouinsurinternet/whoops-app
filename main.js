@@ -2,7 +2,7 @@ const { app, BrowserWindow, shell, desktopCapturer, session, systemPreferences, 
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 
-const APP_URL = 'https://whoops.krakenbots.com';
+const APP_URL = 'https://whoops.ws';
 
 // Auto-updater config
 autoUpdater.autoDownload = true;
@@ -69,6 +69,24 @@ ipcMain.on('source-selected', (event, sourceId) => {
 });
 
 function createWindow() {
+  // Platform-specific window options
+  const platformOptions = process.platform === 'darwin'
+    ? {
+        // macOS: hidden title bar with traffic lights
+        titleBarStyle: 'hiddenInset',
+        trafficLightPosition: { x: 16, y: 18 },
+      }
+    : process.platform === 'win32'
+    ? {
+        // Windows: custom title bar overlay with dark theme
+        titleBarOverlay: {
+          color: '#0a0a0a',
+          symbolColor: '#ffffff',
+          height: 40
+        },
+      }
+    : {};
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -81,18 +99,9 @@ function createWindow() {
       contextIsolation: true,
       webSecurity: true
     },
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 18 },
     backgroundColor: '#0a0a0a',
     show: false,
-    // Windows title bar overlay
-    ...(process.platform === 'win32' && {
-      titleBarOverlay: {
-        color: '#0a0a0a',
-        symbolColor: '#ffffff',
-        height: 48
-      }
-    })
+    ...platformOptions
   });
 
   mainWindow.loadURL(APP_URL);
