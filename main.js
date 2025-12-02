@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, desktopCapturer, session, systemPreferences, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, shell, desktopCapturer, session, systemPreferences, ipcMain, Menu, globalShortcut } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 
@@ -83,14 +83,6 @@ if (!gotTheLock) {
           titleBarStyle: 'hiddenInset',
           trafficLightPosition: { x: 16, y: 18 },
         }
-      : process.platform === 'win32'
-      ? {
-          titleBarOverlay: {
-            color: '#0a0a0a',
-            symbolColor: '#ffffff',
-            height: 40
-          },
-        }
       : {};
 
     mainWindow = new BrowserWindow({
@@ -147,6 +139,14 @@ if (!gotTheLock) {
 
     mainWindow.once('ready-to-show', () => {
       mainWindow.show();
+    });
+
+    // Raccourci Ctrl+R / Cmd+R pour rafraîchir
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if ((input.control || input.meta) && input.key.toLowerCase() === 'r') {
+        mainWindow.webContents.reload();
+        event.preventDefault();
+      }
     });
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
