@@ -105,6 +105,25 @@ if (!gotTheLock) {
 
     mainWindow.loadURL(APP_URL);
 
+    // Grant media permissions automatically (microphone, camera, etc.)
+    mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+      const allowedPermissions = ['media', 'mediaKeySystem', 'geolocation', 'notifications'];
+      if (allowedPermissions.includes(permission)) {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+
+    // Also handle permission check
+    mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+      const allowedPermissions = ['media', 'mediaKeySystem'];
+      if (allowedPermissions.includes(permission)) {
+        return true;
+      }
+      return false;
+    });
+
     // Handle screen sharing
     mainWindow.webContents.session.setDisplayMediaRequestHandler(async (request, callback) => {
       if (process.platform === 'darwin') {
