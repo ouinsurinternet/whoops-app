@@ -6,6 +6,9 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -23,39 +26,42 @@ jobs:
 
       - name: Build Windows
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build:win
+          GH_TOKEN: ${{ github.token }}
+        run: npx electron-builder --win --publish never
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: dist/*.exe
+          path: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
 
-  build-mac:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build macOS
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build:mac
-
-      - name: Upload macOS artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-build
-          path: dist/*.dmg
+  # build-mac disabled - icon.png must be at least 512x512
+  # build-mac:
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #     - name: Install dependencies
+  #       run: npm install
+  #     - name: Build macOS
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #       run: npx electron-builder --mac dmg --publish never
+  #     - name: Upload macOS artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: mac-build
+  #         path: |
+  #           dist/*.dmg
+  #           dist/*.dmg.blockmap
+  #           dist/latest-mac.yml
 
   build-linux:
     runs-on: ubuntu-latest
@@ -73,17 +79,19 @@ jobs:
 
       - name: Build Linux
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build:linux
+          GH_TOKEN: ${{ github.token }}
+        run: npx electron-builder --linux --publish never
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: dist/*.AppImage
+          path: |
+            dist/*.AppImage
+            dist/latest-linux.yml
 
   release:
-    needs: [build-windows, build-mac, build-linux]
+    needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
@@ -95,12 +103,15 @@ jobs:
         with:
           path: artifacts
 
+      - name: List artifacts
+        run: find artifacts -type f
+
       - name: Get version
         id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: Whoops v${{ steps.version.outputs.version }}
@@ -108,7 +119,6 @@ jobs:
           prerelease: false
           files: |
             artifacts/windows-build/*
-            artifacts/mac-build/*
             artifacts/linux-build/*
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
