@@ -160,11 +160,28 @@ if (!gotTheLock) {
       mainWindow.show();
     });
 
-    // Raccourci Ctrl+R / Cmd+R pour rafraîchir
-    mainWindow.webContents.on('before-input-event', (event, input) => {
+    // Raccourci Ctrl+R / Cmd+R pour vider le cache et rafraîchir
+    mainWindow.webContents.on('before-input-event', async (event, input) => {
       if ((input.control || input.meta) && input.key.toLowerCase() === 'r') {
-        mainWindow.webContents.reload();
         event.preventDefault();
+
+        // Ctrl+Shift+R : Hard refresh (vide TOUT le cache)
+        if (input.shift) {
+          console.log('Hard refresh: clearing ALL cache...');
+          await mainWindow.webContents.session.clearCache();
+          await mainWindow.webContents.session.clearStorageData({
+            storages: ['appcache', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage']
+          });
+          mainWindow.webContents.reloadIgnoringCache();
+          console.log('Hard refresh complete!');
+        }
+        // Ctrl+R : Clear cache et reload (pour les problèmes de logos)
+        else {
+          console.log('Clearing cache and reloading...');
+          await mainWindow.webContents.session.clearCache();
+          mainWindow.webContents.reloadIgnoringCache();
+          console.log('Cache cleared and reloaded!');
+        }
       }
     });
 
